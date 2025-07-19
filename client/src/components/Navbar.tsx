@@ -23,8 +23,8 @@ export default function Navbar() {
                 href={item.href}
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-base font-bold tracking-wide ${
                   pathname === item.href
-                    ? 'border-blue-500 text-white'
-                    : 'border-transparent text-white hover:border-gray-300 hover:text-gray-200'
+                    ? 'border-blue-500 text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 {item.label}
