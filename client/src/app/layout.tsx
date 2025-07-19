@@ -29,7 +29,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
         >
           <header>
             <div className="flex justify-between items-center p-6">
@@ -58,7 +58,9 @@ export default function RootLayout({
               </div>
             </div>
           </header>
-          {children}
+          <main>
+            {children}
+          </main>
         </body>
       </html>
     </ClerkProvider>
