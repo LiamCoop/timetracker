@@ -21,25 +21,25 @@ export default function ProjectsPage() {
   
   const selectedProjectId = searchParams.get('project');
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/projects');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
-        }
-        
-        const data = await response.json();
-        setProjects(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load projects');
-      } finally {
-        setIsLoading(false);
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/projects');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
       }
-    };
+      
+      const data = await response.json();
+      setProjects(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load projects');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProjects();
   }, []);
   
@@ -47,6 +47,33 @@ export default function ProjectsPage() {
     const params = new URLSearchParams(searchParams.toString());
     params.set('project', projectId);
     router.push(`/projects?${params.toString()}`);
+  };
+
+  const handleProjectCreated = async (projectId: string) => {
+    await fetchProjects();
+    handleProjectSelect(projectId);
+  };
+
+  const handleProjectDelete = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+      
+      await fetchProjects();
+      
+      if (selectedProjectId === projectId) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('project');
+        router.push(`/projects?${params.toString()}`);
+      }
+    } catch (err) {
+      console.error('Error deleting project:', err);
+    }
   };
 
   const selectedProjectData = selectedProjectId 
@@ -59,6 +86,8 @@ export default function ProjectsPage() {
         projects={projects}
         selectedProjectId={selectedProjectId}
         onProjectSelect={handleProjectSelect}
+        onProjectCreated={handleProjectCreated}
+        onProjectDelete={handleProjectDelete}
         isLoading={isLoading}
         error={error}
       />
