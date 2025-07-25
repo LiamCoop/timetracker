@@ -5,6 +5,7 @@ import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@cl
 import Navbar from '@/components/Navbar';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
+import QueryProvider from '@/components/QueryProvider';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -68,7 +69,9 @@ export default function RootLayout({
               </div>
             </header>
             <main className="h-full">
-              {children}
+              <QueryProvider>
+                {children}
+              </QueryProvider>
             </main>
           </ThemeProvider>
         </body>

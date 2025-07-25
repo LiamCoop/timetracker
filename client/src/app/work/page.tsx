@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ProjectSidebar from '@/components/ProjectSidebar';
 
 interface Project {
@@ -12,94 +13,150 @@ interface Project {
   isActive: boolean;
 }
 
-interface TimeEntry {
-  id: string;
-  startTime: string;
-  endTime: string | null;
-  description: string | null;
-  duration: number | null;
-  projectId: string;
-  project: Project;
-}
 
 export default function WorkPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
-  const [isTracking, setIsTracking] = useState(false);
+  const queryClient = useQueryClient();
+  const [workDescription, setWorkDescription] = useState('');
+  const [currentTime, setCurrentTime] = useState(Date.now());
   
   const selectedProjectId = searchParams.get('project');
 
-  const fetchProjects = async () => {
-    try {
-      setIsLoading(true);
+  // Fetch projects query
+  const {
+    data: projects = [],
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => {
       const response = await fetch('/api/projects');
-      
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
-      
       const data = await response.json();
-      setProjects(data.filter((project: Project) => project.isActive));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects');
-    } finally {
-      setIsLoading(false);
+      return data.filter((project: Project) => project.isActive);
     }
-  };
+  });
 
-  const fetchActiveTimeEntry = async () => {
-    try {
+  // Fetch active time entry query
+  const {
+    data: activeTimeEntryData
+  } = useQuery({
+    queryKey: ['activeTimeEntry'],
+    queryFn: async () => {
       const response = await fetch('/api/time-entries?active=true');
       
       if (!response.ok) {
         if (response.status === 404) {
-          setActiveTimeEntry(null);
-          return;
+          return null;
         }
         throw new Error('Failed to fetch active time entry');
       }
       
       const data = await response.json();
-      if (data.length > 0) {
-        setActiveTimeEntry(data[0]);
-        setIsTracking(true);
-      } else {
-        setActiveTimeEntry(null);
-        setIsTracking(false);
-      }
-    } catch (err) {
-      console.error('Error fetching active time entry:', err);
+      return data.length > 0 ? data[0] : null;
     }
-  };
+  });
 
+  const activeTimeEntry = activeTimeEntryData;
+  const isTracking = !!activeTimeEntry;
+
+  // Mutations
+  const updateTimeEntryMutation = useMutation({
+    mutationFn: async ({ id, endTime, description }: { id: string; endTime: string; description: string }) => {
+      const response = await fetch(`/api/time-entries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endTime, description })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update time entry');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activeTimeEntry'] });
+    }
+  });
+
+  const createTimeEntryMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const response = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to start time tracking');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activeTimeEntry'] });
+    }
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    }
+  });
+
+  // Update work description and current time when active time entry changes
   useEffect(() => {
-    fetchProjects();
-    fetchActiveTimeEntry();
-  }, []);
+    if (activeTimeEntry) {
+      setWorkDescription(activeTimeEntry.description || '');
+      setCurrentTime(Date.now()); // Update current time immediately
+    } else {
+      setWorkDescription('');
+    }
+  }, [activeTimeEntry]);
+
+  // Set up timer to update current time every minute when tracking
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isTracking && activeTimeEntry) {
+      // Update immediately when tracking starts
+      setCurrentTime(Date.now());
+      
+      interval = setInterval(() => {
+        setCurrentTime(Date.now());
+      }, 1000); // Update every second
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isTracking, activeTimeEntry]);
   
   const handleProjectSelect = async (projectId: string) => {
     try {
-      // If there's an active time entry, end it first
+      // If there's an active time entry, end it first and save the description
       if (activeTimeEntry) {
-        await fetch(`/api/time-entries/${activeTimeEntry.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            endTime: new Date().toISOString()
-          })
+        await updateTimeEntryMutation.mutateAsync({
+          id: activeTimeEntry.id,
+          endTime: new Date().toISOString(),
+          description: workDescription
         });
       }
 
       // If clicking the same project that's already active, just stop tracking
       if (activeTimeEntry && activeTimeEntry.projectId === projectId) {
-        setActiveTimeEntry(null);
-        setIsTracking(false);
+        setWorkDescription('');
         const params = new URLSearchParams(searchParams.toString());
         params.delete('project');
         router.push(`/work?${params.toString()}`);
@@ -107,23 +164,8 @@ export default function WorkPage() {
       }
 
       // Start new time entry for the selected project
-      const response = await fetch('/api/time-entries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          projectId: projectId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start time tracking');
-      }
-
-      const newTimeEntry = await response.json();
-      setActiveTimeEntry(newTimeEntry);
-      setIsTracking(true);
+      await createTimeEntryMutation.mutateAsync(projectId);
+      setWorkDescription('');
 
       // Update URL to reflect selected project
       const params = new URLSearchParams(searchParams.toString());
@@ -131,21 +173,17 @@ export default function WorkPage() {
       router.push(`/work?${params.toString()}`);
     } catch (err) {
       console.error('Error handling project selection:', err);
-      setError(err instanceof Error ? err.message : 'Failed to handle time tracking');
     }
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newDescription = e.target.value;
+    setWorkDescription(newDescription);
   };
 
   const handleProjectDelete = async (projectId: string) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete project');
-      }
-      
-      await fetchProjects();
+      await deleteProjectMutation.mutateAsync(projectId);
       
       if (selectedProjectId === projectId) {
         const params = new URLSearchParams(searchParams.toString());
@@ -169,7 +207,7 @@ export default function WorkPage() {
         onProjectSelect={handleProjectSelect}
         onProjectDelete={handleProjectDelete}
         isLoading={isLoading}
-        error={error}
+        error={error?.message || null}
         title="Work"
         showNewProjectButton={false}
         showDeleteButton={false}
@@ -201,17 +239,24 @@ export default function WorkPage() {
                   Duration
                 </label>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {Math.floor((Date.now() - new Date(activeTimeEntry.startTime).getTime()) / (1000 * 60))} minutes
+                  {Math.floor((currentTime - new Date(activeTimeEntry.startTime).getTime()) / (1000 * 60))} minutes
                 </p>
               </div>
-              {activeTimeEntry.description && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Description
-                  </label>
-                  <p className="text-gray-900 dark:text-gray-100">{activeTimeEntry.description}</p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  What are you working on?
+                </label>
+                <textarea
+                  value={workDescription}
+                  onChange={handleDescriptionChange}
+                  placeholder="Describe what you're working on..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  rows={3}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Description will be saved when you change projects or stop tracking
+                </p>
+              </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
                 <button
                   onClick={() => handleProjectSelect(activeTimeEntry.projectId)}

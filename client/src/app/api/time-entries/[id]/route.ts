@@ -15,7 +15,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const timeEntryId = params.id;
+    const resolvedParams = await params;
+    const timeEntryId = resolvedParams.id;
     const body = await request.json();
     const { endTime, description } = body;
 
@@ -79,7 +80,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const timeEntryId = params.id;
+    const resolvedParams = await params;
+    const timeEntryId = resolvedParams.id;
 
     // Verify time entry belongs to user
     const existingEntry = await prisma.timeEntry.findFirst({
