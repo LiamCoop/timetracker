@@ -45,13 +45,6 @@ export default function WorkPage() {
   const activeTimeEntry = activeTimeEntryData;
   const isTracking = !!activeTimeEntry;
 
-  // Helper function to calculate duration in minutes
-  const calculateDuration = (startTime: string, endTime: string) => {
-    const start = new Date(startTime).getTime();
-    const end = new Date(endTime).getTime();
-    return Math.floor((end - start) / (1000 * 60));
-  };
-
   // Mutations
   const updateTimeEntryMutation = useMutation({
     mutationFn: async ({ id, endTime, description }: { id: string; endTime: string; description: string }) => {
