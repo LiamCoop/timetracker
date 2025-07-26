@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const wh = new Webhook(webhookSecret)
 
   // Verify the payload with the headers
-  let evt
+  let evt: any
   try {
     evt = wh.verify(body, {
       'svix-id': svix_id,

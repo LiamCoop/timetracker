@@ -22,6 +22,6 @@ export function useWeeklyTime(projectId: string | null) {
     },
     enabled: !!projectId,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 15, // 15 minutes
+    gcTime: 1000 * 60 * 15, // 15 minutes
   });
 }

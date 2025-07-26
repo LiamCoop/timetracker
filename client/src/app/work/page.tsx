@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
+export const dynamic = 'force-dynamic';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ProjectSidebar from '@/components/ProjectSidebar';
 import { useActiveProjects } from '@/hooks/useProjects';
 import { useActiveTimeEntry, useLastTimeEntry } from '@/hooks/useTimeEntries';
 import { useDailyQuote } from '@/hooks/useDailyQuote';
+import { Suspense } from 'react';
 
 
 
@@ -310,9 +313,9 @@ export default function WorkPage() {
                 </>
               ) : dailyQuote ? (
                 <>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">"{dailyQuote.quote}"</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">"{(dailyQuote as any).quote}"</h1>
                   <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-                    {dailyQuote.author ? `— ${dailyQuote.author}` : 'Select an active project from the sidebar to start tracking your work.'}
+                    {(dailyQuote as any).author ? `— ${(dailyQuote as any).author}` : 'Select an active project from the sidebar to start tracking your work.'}
                   </p>
                 </>
               ) : (

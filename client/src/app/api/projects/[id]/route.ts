@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -15,7 +15,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = params.id;
+    const resolvedParams = await params;
+    const projectId = resolvedParams.id;
     
     // Check if project exists and belongs to user
     const existingProject = await prisma.project.findFirst({

@@ -6,6 +6,7 @@ interface TimeEntry {
   startTime: string;
   endTime: string | null;
   description: string | null;
+  duration?: number | null;
   project?: {
     id: string;
     name: string;

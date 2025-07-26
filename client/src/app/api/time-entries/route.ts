@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     const projectId = url.searchParams.get('projectId');
     const limit = url.searchParams.get('limit');
 
-    // @ts-ignore
     const whereClause: any = {
       userId: userId
     };

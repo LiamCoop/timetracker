@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ProjectSidebar from '@/components/ProjectSidebar';
@@ -105,7 +107,7 @@ export default function ProjectsPage() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={weeklyTimeData}
+                    data={weeklyTimeData as any[]}
                     margin={{
                       top: 5,
                       right: 30,
@@ -159,7 +161,7 @@ export default function ProjectsPage() {
                   
                   {isSummariesLoading ? (
                     <p className="text-gray-600 dark:text-gray-400">Loading time summaries...</p>
-                  ) : timeSummaries.length > 0 ? (
+                  ) : (timeSummaries as any[]).length > 0 ? (
                     <div className="space-y-6">
                       {/* Time period headers */}
                       <div className="grid grid-cols-4 gap-4 pb-2 border-b border-gray-200 dark:border-gray-600">
@@ -170,7 +172,7 @@ export default function ProjectsPage() {
                       </div>
                       
                       {/* Project rows */}
-                      {timeSummaries.map((summary) => (
+                      {(timeSummaries as any[]).map((summary) => (
                         <div key={summary.project.id} className="grid grid-cols-4 gap-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                           <div className="flex items-center">
                             <div 

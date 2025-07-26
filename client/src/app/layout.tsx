@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import QueryProvider from '@/components/QueryProvider';
+import { Suspense } from 'react';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,7 +46,9 @@ export default function RootLayout({
                 <div className="flex items-center gap-4">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Time Tracker</h1>
                   <SignedIn>
-                    <Navbar />
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <Navbar />
+                    </Suspense>
                   </SignedIn>
                 </div>
                 <div className="flex items-center gap-4">
