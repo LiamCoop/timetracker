@@ -2,16 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ProjectSidebar from '@/components/ProjectSidebar';
+import { useActiveProjects } from '@/hooks/useProjects';
+import { useActiveTimeEntry, useLastTimeEntry } from '@/hooks/useTimeEntries';
+import { useDailyQuote } from '@/hooks/useDailyQuote';
 
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  color: string;
-  isActive: boolean;
-}
 
 
 export default function WorkPage() {
@@ -28,40 +24,33 @@ export default function WorkPage() {
     data: projects = [],
     isLoading,
     error
-  } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await fetch('/api/projects');
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects');
-      }
-      const data = await response.json();
-      return data.filter((project: Project) => project.isActive);
-    }
-  });
+  } = useActiveProjects();
 
   // Fetch active time entry query
   const {
     data: activeTimeEntryData
-  } = useQuery({
-    queryKey: ['activeTimeEntry'],
-    queryFn: async () => {
-      const response = await fetch('/api/time-entries?active=true');
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error('Failed to fetch active time entry');
-      }
-      
-      const data = await response.json();
-      return data.length > 0 ? data[0] : null;
-    }
-  });
+  } = useActiveTimeEntry();
+
+  // Fetch last time entry for selected project
+  const {
+    data: lastTimeEntry
+  } = useLastTimeEntry(selectedProjectId);
+
+  // Fetch daily quote
+  const {
+    data: dailyQuote,
+    isLoading: isQuoteLoading
+  } = useDailyQuote();
 
   const activeTimeEntry = activeTimeEntryData;
   const isTracking = !!activeTimeEntry;
+
+  // Helper function to calculate duration in minutes
+  const calculateDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime).getTime();
+    const end = new Date(endTime).getTime();
+    return Math.floor((end - start) / (1000 * 60));
+  };
 
   // Mutations
   const updateTimeEntryMutation = useMutation({
@@ -157,8 +146,9 @@ export default function WorkPage() {
       // If clicking the same project that's already active, just stop tracking
       if (activeTimeEntry && activeTimeEntry.projectId === projectId) {
         setWorkDescription('');
+        // Set URL to show the project as selected (not tracking)
         const params = new URLSearchParams(searchParams.toString());
-        params.delete('project');
+        params.set('project', projectId);
         router.push(`/work?${params.toString()}`);
         return;
       }
@@ -195,15 +185,15 @@ export default function WorkPage() {
     }
   };
 
-  const selectedProjectData = activeTimeEntry 
-    ? projects.find(p => p.id === activeTimeEntry.projectId) || activeTimeEntry.project
+  const selectedProjectData = selectedProjectId
+    ? projects.find(p => p.id === selectedProjectId) || (activeTimeEntry?.project)
     : null;
 
   return (
     <div className="flex h-full">
       <ProjectSidebar 
         projects={projects}
-        selectedProjectId={activeTimeEntry?.projectId || null}
+        selectedProjectId={selectedProjectId}
         onProjectSelect={handleProjectSelect}
         onProjectDelete={handleProjectDelete}
         isLoading={isLoading}
@@ -213,67 +203,131 @@ export default function WorkPage() {
         showDeleteButton={false}
       />
       
-      {selectedProjectData && activeTimeEntry ? (
+      {selectedProjectData ? (
         <div className="flex-1 p-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{selectedProjectData.name}</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{selectedProjectData.description}</p>
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Active Work Session</h2>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">Tracking</span>
+          
+          {activeTimeEntry && activeTimeEntry.projectId === selectedProjectId ? (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Active Work Session</h2>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Tracking</span>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Started at
+                  </label>
+                  <p className="text-gray-900 dark:text-gray-100">
+                    {new Date(activeTimeEntry.startTime).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Duration
+                  </label>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {Math.floor((currentTime - new Date(activeTimeEntry.startTime).getTime()) / (1000 * 60))} minutes
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    What are you working on?
+                  </label>
+                  <textarea
+                    value={workDescription}
+                    onChange={handleDescriptionChange}
+                    placeholder="Describe what you're working on..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    rows={3}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Description will be saved when you change projects or stop tracking
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <button
+                    onClick={() => handleProjectSelect(activeTimeEntry.projectId)}
+                    className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30"
+                  >
+                    Stop Tracking
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Started at
-                </label>
-                <p className="text-gray-900 dark:text-gray-100">
-                  {new Date(activeTimeEntry.startTime).toLocaleString()}
-                </p>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Project Overview</h2>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Not Tracking</span>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Duration
-                </label>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {Math.floor((currentTime - new Date(activeTimeEntry.startTime).getTime()) / (1000 * 60))} minutes
+              <div className="space-y-4">
+                {lastTimeEntry && lastTimeEntry.endTime ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Last Session
+                    </label>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {lastTimeEntry.duration || 0} minutes
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Completed {new Date(lastTimeEntry.endTime).toLocaleString()}
+                    </p>
+                    {lastTimeEntry.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        "{lastTimeEntry.description}"
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No previous sessions found for this project.
+                  </p>
+                )}
+                <p className="text-gray-600 dark:text-gray-400">
+                  Ready to start working on this project. Click "Start Tracking" to begin a new work session.
                 </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  What are you working on?
-                </label>
-                <textarea
-                  value={workDescription}
-                  onChange={handleDescriptionChange}
-                  placeholder="Describe what you're working on..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  rows={3}
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Description will be saved when you change projects or stop tracking
-                </p>
-              </div>
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                <button
-                  onClick={() => handleProjectSelect(activeTimeEntry.projectId)}
-                  className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30"
-                >
-                  Stop Tracking
-                </button>
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <button
+                    onClick={() => handleProjectSelect(selectedProjectId!)}
+                    className="px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30"
+                  >
+                    Start Tracking
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className="w-3/4 flex flex-col justify-start items-center pt-24">
           <div className="flex items-center justify-center">
             <div className="flex flex-col justify-center items-center text-center">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Ready to Work</h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">Select an active project from the sidebar to start tracking your work.</p>
+              {isQuoteLoading ? (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Ready to Work</h1>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">Loading inspiration...</p>
+                </>
+              ) : dailyQuote ? (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">"{dailyQuote.quote}"</h1>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+                    {dailyQuote.author ? `— ${dailyQuote.author}` : 'Select an active project from the sidebar to start tracking your work.'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Ready to Work</h1>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">Select an active project from the sidebar to start tracking your work.</p>
+                </>
+              )}
               <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 max-w-md">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Start Working</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">

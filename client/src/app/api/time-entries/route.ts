@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url);
     const active = url.searchParams.get('active') === 'true';
+    const completed = url.searchParams.get('completed') === 'true';
     const projectId = url.searchParams.get('projectId');
+    const limit = url.searchParams.get('limit');
 
     let whereClause: any = {
       userId: userId
@@ -22,13 +24,15 @@ export async function GET(request: NextRequest) {
 
     if (active) {
       whereClause.endTime = null;
+    } else if (completed) {
+      whereClause.endTime = { not: null };
     }
 
     if (projectId) {
       whereClause.projectId = projectId;
     }
 
-    const timeEntries = await prisma.timeEntry.findMany({
+    const queryOptions: any = {
       where: whereClause,
       include: {
         project: true
@@ -36,7 +40,13 @@ export async function GET(request: NextRequest) {
       orderBy: {
         startTime: 'desc'
       }
-    });
+    };
+
+    if (limit) {
+      queryOptions.take = parseInt(limit, 10);
+    }
+
+    const timeEntries = await prisma.timeEntry.findMany(queryOptions);
 
     return NextResponse.json(timeEntries);
   } catch (error) {
