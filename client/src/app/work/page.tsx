@@ -1,19 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-export const dynamic = 'force-dynamic';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ProjectSidebar from '@/components/ProjectSidebar';
 import { useActiveProjects } from '@/hooks/useProjects';
 import { useActiveTimeEntry, useLastTimeEntry } from '@/hooks/useTimeEntries';
 import { useDailyQuote } from '@/hooks/useDailyQuote';
-import { Suspense } from 'react';
 
-
-
-export default function WorkPage() {
+function WorkPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -336,5 +331,13 @@ export default function WorkPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function WorkPage() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
+      <WorkPageContent />
+    </Suspense>
   );
 }
