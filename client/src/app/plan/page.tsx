@@ -6,7 +6,7 @@ import ProjectSidebar from '@/components/ProjectSidebar';
 import { useProjects } from '@/hooks/useProjects';
 import { useTimeSummaries } from '@/hooks/useTimeSummaries';
 import { useWeeklyTime } from '@/hooks/useWeeklyTime';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 
 export default function ProjectsPage() {

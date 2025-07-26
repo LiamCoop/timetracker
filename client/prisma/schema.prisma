@@ -65,3 +65,15 @@ model TimeEntry {
   @@index([userId, startTime])
   @@index([projectId])
 }
+
+// Daily motivational quotes
+model DailyQuotes {
+  id        String   @id
+  quote     String
+  author    String?
+  category  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+}
