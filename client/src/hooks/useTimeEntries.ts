@@ -56,3 +56,25 @@ export function useLastTimeEntry(projectId: string | null) {
     enabled: !!projectId
   });
 }
+
+export function useWeeklyTimeEntries(projectId: string | null) {
+  return useQuery({
+    queryKey: ['weeklyTimeEntries', projectId],
+    queryFn: async (): Promise<TimeEntry[]> => {
+      if (!projectId) return [];
+      
+      const response = await fetch(`/api/time-entries/weekly?projectId=${projectId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error('Failed to fetch weekly time entries');
+      }
+      
+      const data = await response.json();
+      return data || [];
+    },
+    enabled: !!projectId
+  });
+}

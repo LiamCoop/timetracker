@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import NewProjectSheet from './NewProjectSheet';
 
 interface Project {
@@ -22,6 +23,8 @@ interface ProjectSidebarProps {
   title?: string;
   showNewProjectButton?: boolean;
   showDeleteButton?: boolean;
+  isNewProjectSheetOpen?: boolean;
+  onNewProjectSheetOpenChange?: (open: boolean) => void;
 }
 
 export default function ProjectSidebar({ 
@@ -34,12 +37,30 @@ export default function ProjectSidebar({
   error = null,
   title = "Projects",
   showNewProjectButton = true,
-  showDeleteButton = true
+  showDeleteButton = true,
+  isNewProjectSheetOpen = false,
+  onNewProjectSheetOpenChange
 }: ProjectSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  
+  // Use external control when provided, otherwise use internal state
+  const sheetOpen = onNewProjectSheetOpenChange ? isNewProjectSheetOpen : isSheetOpen;
+  const setSheetOpen = onNewProjectSheetOpenChange || setIsSheetOpen;
 
   const handleProjectClick = (projectId: string) => {
     onProjectSelect?.(projectId);
+  };
+
+  const handleCreateFirstProject = () => {
+    if (pathname === '/plan') {
+      // If we're on the plan page, open the sheet directly
+      setSheetOpen(true);
+    } else {
+      // If we're on another page (like work), navigate to plan with the query parameter
+      router.push('/plan?new=true');
+    }
   };
 
   const handleDeleteClick = (e: React.MouseEvent, projectId: string) => {
@@ -54,8 +75,8 @@ export default function ProjectSidebar({
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           {showNewProjectButton && (
             <NewProjectSheet 
-              open={isSheetOpen} 
-              onOpenChange={setIsSheetOpen}
+              open={sheetOpen} 
+              onOpenChange={setSheetOpen}
               onProjectCreated={onProjectCreated}
               trigger={
                 <button className="px-3 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-900">
@@ -164,7 +185,10 @@ export default function ProjectSidebar({
             {projects.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">No projects yet</p>
-                <button className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                <button 
+                  onClick={handleCreateFirstProject}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                >
                   Create your first project
                 </button>
               </div>

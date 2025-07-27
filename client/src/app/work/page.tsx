@@ -309,15 +309,14 @@ function WorkPageContent() {
               ) : dailyQuote ? (
                 <>
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">"{(dailyQuote as any).quote}"</h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-                    {(dailyQuote as any).author ? `— ${(dailyQuote as any).author}` : 'Select an active project from the sidebar to start tracking your work.'}
-                  </p>
+                  {(dailyQuote as any).author && (
+                    <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+                      — {(dailyQuote as any).author}
+                    </p>
+                  )}
                 </>
               ) : (
-                <>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Ready to Work</h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">Select an active project from the sidebar to start tracking your work.</p>
-                </>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Ready to Work</h1>
               )}
               <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 max-w-md">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Start Working</h3>

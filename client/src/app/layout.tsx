@@ -71,7 +71,7 @@ export default function RootLayout({
                 </div>
               </div>
             </header>
-            <main className="h-full">
+            <main>
               <QueryProvider>
                 {children}
               </QueryProvider>
