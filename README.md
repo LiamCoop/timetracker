@@ -2,6 +2,9 @@
 Use this tool to track time spent working on different projects, or for different clients.
 Helpful for freelancers, consultants, or anyone who needs to keep track of their time.
 
+Feel free to give it a go. It's deployed on Railway.
+https://timetracker-production-f7d3.up.railway.app/
+
 1. Plan
 Break up the work that you do into different projects, get them added to Timetracker.
 
