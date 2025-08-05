@@ -8,6 +8,33 @@ import { useActiveProjects } from '@/hooks/useProjects';
 import { useActiveTimeEntry, useLastTimeEntry } from '@/hooks/useTimeEntries';
 import { useDailyQuote } from '@/hooks/useDailyQuote';
 
+// Helper function to format duration in a human-readable way
+const formatDuration = (minutes: number): string => {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  } else if (minutes < 1440) { // Less than 24 hours
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${remainingMinutes}m`;
+  } else { // 24 hours or more
+    const days = Math.floor(minutes / 1440);
+    const remainingHours = Math.floor((minutes % 1440) / 60);
+    const remainingMinutes = minutes % 60;
+    
+    let result = `${days}d`;
+    if (remainingHours > 0) {
+      result += ` ${remainingHours}h`;
+    }
+    if (remainingMinutes > 0 && remainingHours === 0) {
+      result += ` ${remainingMinutes}m`;
+    }
+    return result;
+  }
+};
+
 function WorkPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -257,7 +284,7 @@ function WorkPageContent() {
                     Duration
                   </label>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {Math.floor((currentTime - new Date(activeTimeEntry.startTime).getTime()) / (1000 * 60))} minutes
+                    {formatDuration(Math.floor((currentTime - new Date(activeTimeEntry.startTime).getTime()) / (1000 * 60)))}
                   </p>
                 </div>
                 <div>
@@ -301,7 +328,7 @@ function WorkPageContent() {
                       Last Session
                     </label>
                     <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {lastTimeEntry.duration || 0} minutes
+                      {formatDuration(lastTimeEntry.duration || 0)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Completed {new Date(lastTimeEntry.endTime).toLocaleString()}
