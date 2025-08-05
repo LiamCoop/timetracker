@@ -122,6 +122,41 @@ function WorkPageContent() {
       }
     };
   }, [isTracking, activeTimeEntry]);
+
+  // Handle window close/refresh - stop tracking session
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (activeTimeEntry) {
+        // Use fetch with keepalive for reliable data sending during page unload
+        try {
+          fetch(`/api/time-entries/${activeTimeEntry.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              endTime: new Date().toISOString(),
+              description: workDescription
+            }),
+            keepalive: true
+          }).catch(error => {
+            console.error('Failed to stop tracking session:', error);
+          });
+        } catch (error) {
+          console.error('Failed to stop tracking session:', error);
+        }
+        
+        // Show confirmation dialog
+        event.preventDefault();
+        event.returnValue = 'You have an active time tracking session. Are you sure you want to leave?';
+        return event.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [activeTimeEntry, workDescription]);
   
   const handleProjectSelect = async (projectId: string) => {
     try {
@@ -181,7 +216,7 @@ function WorkPageContent() {
     : null;
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full min-h-0">
       <ProjectSidebar 
         projects={projects}
         selectedProjectId={selectedProjectId}
@@ -308,7 +343,7 @@ function WorkPageContent() {
                 </>
               ) : dailyQuote ? (
                 <>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">"{(dailyQuote as any).quote}"</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">"{(dailyQuote as any).quote}"</h1>
                   {(dailyQuote as any).author && (
                     <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
                       — {(dailyQuote as any).author}

@@ -33,7 +33,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col h-screen`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col h-full`}
         >
           <ThemeProvider
             attribute="class"
@@ -71,7 +71,7 @@ export default function RootLayout({
                 </div>
               </div>
             </header>
-            <main>
+            <main className="flex-1 h-0">
               <QueryProvider>
                 {children}
               </QueryProvider>

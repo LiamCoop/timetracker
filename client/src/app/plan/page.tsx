@@ -102,7 +102,7 @@ function PlanPageContent() {
     : null;
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full min-h-0">
       <ProjectSidebar 
         projects={projects}
         selectedProjectId={selectedProjectId}
