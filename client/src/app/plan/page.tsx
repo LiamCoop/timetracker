@@ -8,6 +8,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useTimeSummaries } from '@/hooks/useTimeSummaries';
 import { useWeeklyTime } from '@/hooks/useWeeklyTime';
 import { useWeeklyTimeEntries } from '@/hooks/useTimeEntries';
+import { formatDuration } from '@/utils/formatDuration';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function PlanPageContent() {
@@ -263,13 +264,13 @@ function PlanPageContent() {
                             </span>
                           </div>
                           <div className="text-center text-gray-600 dark:text-gray-400">
-                            {summary.today > 0 ? `${summary.today}m` : '-'}
+                            {summary.today > 0 ? formatDuration(summary.today) : '-'}
                           </div>
                           <div className="text-center text-gray-600 dark:text-gray-400">
-                            {summary.thisWeek > 0 ? `${summary.thisWeek}m` : '-'}
+                            {summary.thisWeek > 0 ? formatDuration(summary.thisWeek) : '-'}
                           </div>
                           <div className="text-center text-gray-600 dark:text-gray-400">
-                            {summary.thisMonth > 0 ? `${summary.thisMonth}m` : '-'}
+                            {summary.thisMonth > 0 ? formatDuration(summary.thisMonth) : '-'}
                           </div>
                         </div>
                       ))}
