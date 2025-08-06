@@ -320,7 +320,7 @@ function WorkPageContent() {
                   </p>
                 )}
                 <p className="text-gray-600 dark:text-gray-400">
-                  Ready to start working on this project. Click "Start Tracking" to begin a new work session.
+                  Ready to start working on this project? Click "Start Tracking" to begin a new work session.
                 </p>
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
                   <button
