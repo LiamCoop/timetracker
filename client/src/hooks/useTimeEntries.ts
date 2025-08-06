@@ -78,3 +78,22 @@ export function useWeeklyTimeEntries(projectId: string | null) {
     enabled: !!projectId
   });
 }
+
+export function useAllTimeEntries() {
+  return useQuery({
+    queryKey: ['allTimeEntries'],
+    queryFn: async (): Promise<TimeEntry[]> => {
+      const response = await fetch('/api/time-entries?completed=true');
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error('Failed to fetch time entries');
+      }
+      
+      const data = await response.json();
+      return data || [];
+    }
+  });
+}
