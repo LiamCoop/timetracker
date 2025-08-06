@@ -10,7 +10,13 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // On mount, if we're using system theme, commit the system preference to localStorage
+    if (theme === 'system') {
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(systemPrefersDark ? 'dark' : 'light');
+    }
+  }, [theme, setTheme]);
 
   if (!mounted) {
     return (
@@ -23,7 +29,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+      className="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
