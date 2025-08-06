@@ -59,6 +59,7 @@ function WorkPageContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeTimeEntry'] });
+      queryClient.invalidateQueries({ queryKey: ['lastTimeEntry'] });
     }
   });
 
