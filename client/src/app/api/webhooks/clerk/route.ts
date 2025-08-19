@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET
 
 export async function POST(req: NextRequest) {
+  console.log('Received Clerk webhook')
   if (!webhookSecret) {
     throw new Error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local')
   }
